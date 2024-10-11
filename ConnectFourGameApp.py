@@ -1,5 +1,5 @@
-from TicTacToeClass import (
-    TicTacToe,
+from ConnectFourClass import (
+    ConnectFour,
     query_player,
     minmax_decision,
     alpha_beta_search,
@@ -35,6 +35,7 @@ def get_action(player, game, state):
         return monte_carlo_tree_search(state, game)
     elif player == playerValues['Query']:
         return query_player(game, state)
+    
 
 #function to play a round of the game
 def play_round(game, state, player1, player2):
@@ -47,9 +48,8 @@ def play_round(game, state, player1, player2):
             print(f"The action taken by Player X is: {action}")
         else:  #current player O
             action = get_action(player2, game, state)
-            print(f"The action taken by Player O is: {action}")
-
-
+            print(f"The action taken by Player O is: {action}") 
+        
         #update game state based on chosen action
         state = game.result(state, action)
         game.display(state)  #display updated game state
@@ -76,11 +76,11 @@ def playAgain(prompt):
                 return play_again
         except ValueError:
             print("Invalid input. Please enter 'yes' or 'no'.")
-
+            
 #main
 def main():
     while True:
-        game = TicTacToe()  #set game 
+        game = ConnectFour()  #set game 
         rounds_won = {'X': 0, 'O': 0}  #used to track number of round won
         state = game.initial  #set initial state 
 

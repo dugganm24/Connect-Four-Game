@@ -1,4 +1,4 @@
-from games4e import Game, GameState, ucb, MCT_Node
+from games4e import Game, GameState, ucb, MCT_Node, TicTacToe
 import numpy as np
 import random
 
@@ -41,8 +41,8 @@ class TicTacToe(Game):
 
     def display(self, state):
         board = state.board
-        for x in range(1, self.h + 1):
-            for y in range(1, self.v + 1):
+        for y in range(self.v, 0, -1):
+            for x in range(1, self.h + 1):
                 print(board.get((x, y), '.'), end=' ')
             print()
 
@@ -71,74 +71,85 @@ class TicTacToe(Game):
         n -= 1  # Because we counted move itself twice
         return n >= self.k
 
+class ConnectFour(TicTacToe):
+    """A TicTacToe-like game in which you can only make a move on the bottom
+    row, or in a square directly above an occupied square.  Traditionally
+    played on a 7x6 board and requiring 4 in a row."""
+
+    def __init__(self, h=7, v=6, k=4):
+        TicTacToe.__init__(self, h, v, k)
+
+    def actions(self, state):
+        return [(x, y) for (x, y) in state.moves
+                if y == 1 or (x, y - 1) in state.board]
+
 #Random Player Implementation
 def random_player(game, state):
     """A player that chooses a legal move at random."""
     return random.choice(game.actions(state)) if game.actions(state) else None
 
 #MiniMax Implementation    
-def minmax_decision(state, game):
+def minmax_decision(state, game, max_depth = 5):
     """Given a state in a game, calculate the best move by searching
     forward all the way to the terminal states. [Figure 5.3]"""
 
     player = game.to_move(state)
 
-    def max_value(state):
-        if game.terminal_test(state):
+    def max_value(state, depth):
+        if game.terminal_test(state) or depth >= max_depth:
             return game.utility(state, player)
         v = -np.inf
         for a in game.actions(state):
-            v = max(v, min_value(game.result(state, a)))
+            v = max(v, min_value(game.result(state, a), depth+1))
         return v
 
-    def min_value(state):
-        if game.terminal_test(state):
+    def min_value(state, depth):
+        if game.terminal_test(state) or depth >= max_depth:
             return game.utility(state, player)
         v = np.inf
         for a in game.actions(state):
-            v = min(v, max_value(game.result(state, a)))
+            v = min(v, max_value(game.result(state, a), depth+1))
         return v
 
     # Body of minmax_decision:
-    return max(game.actions(state), key=lambda a: min_value(game.result(state, a)))  
+    return max(game.actions(state), key=lambda a: min_value(game.result(state, a), 1))  
 
 
 #Alpha Beta Implementation
-def alpha_beta_search(state, game):
-    """Search game to determine best action; use alpha-beta pruning.
-    As in [Figure 5.7], this version searches all the way to the leaves."""
+def alpha_beta_search(state, game, max_depth=4):
+    """Search game to determine the best action using alpha-beta pruning with a depth limit."""
 
     player = game.to_move(state)
 
-    # Functions used by alpha_beta
-    def max_value(state, alpha, beta):
-        if game.terminal_test(state):
+    # Functions used by alpha_beta_search
+    def max_value(state, alpha, beta, depth):
+        if game.terminal_test(state) or depth >= max_depth:
             return game.utility(state, player)
         v = -np.inf
         for a in game.actions(state):
-            v = max(v, min_value(game.result(state, a), alpha, beta))
+            v = max(v, min_value(game.result(state, a), alpha, beta, depth + 1))
             if v >= beta:
                 return v
             alpha = max(alpha, v)
         return v
 
-    def min_value(state, alpha, beta):
-        if game.terminal_test(state):
+    def min_value(state, alpha, beta, depth):
+        if game.terminal_test(state) or depth >= max_depth:
             return game.utility(state, player)
         v = np.inf
         for a in game.actions(state):
-            v = min(v, max_value(game.result(state, a), alpha, beta))
+            v = min(v, max_value(game.result(state, a), alpha, beta, depth + 1))
             if v <= alpha:
                 return v
             beta = min(beta, v)
         return v
 
-    # Body of alpha_beta_search:
+    # Body of alpha_beta_search_with_depth
     best_score = -np.inf
     beta = np.inf
     best_action = None
     for a in game.actions(state):
-        v = min_value(game.result(state, a), best_score, beta)
+        v = min_value(game.result(state, a), best_score, beta, 1)
         if v > best_score:
             best_score = v
             best_action = a
